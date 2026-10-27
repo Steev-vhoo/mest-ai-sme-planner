@@ -144,11 +144,23 @@ export default function PlanForm() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...f, adminHoursPerWeek: Number(f.adminHoursPerWeek) }),
       });
-      const data = await res.json().catch(() => ({ error: "Unexpected server response." }));
+      // A non-JSON reply means the platform cut the request off (usually a function timeout).
+      const data = await res.json().catch(() => ({
+        error:
+          res.status === 504
+            ? "The server took too long to build your plan. Please try again. (Code: TIMEOUT_504)"
+            : `Unexpected server response. Please try again. (Code: HTTP_${res.status})`,
+      }));
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(
+        err instanceof TypeError
+          ? "Connection to the server was lost. Check your internet and try again. (Code: NETWORK)"
+          : err instanceof Error
+            ? err.message
+            : "Something went wrong.",
+      );
     } finally {
       setLoading(false);
     }

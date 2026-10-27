@@ -60,9 +60,19 @@ export async function POST(req: Request) {
     if (e instanceof Anthropic.RateLimitError || e instanceof Anthropic.InternalServerError) {
       return NextResponse.json({ error: "Our AI planner is busy right now. Please try again in a minute." }, { status: 503 });
     }
+    // Setup problems get a specific code so admins can diagnose from the browser.
+    if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {
+      console.error("Anthropic auth error", e.status, e.message);
+      return NextResponse.json({ error: "The planner isn't available right now. (Code: AI_KEY_REJECTED)" }, { status: 503 });
+    }
     if (e instanceof Anthropic.APIError) {
       console.error("Anthropic API error", e.status, e.message);
-      return NextResponse.json({ error: "Something went wrong creating your plan. Please try again." }, { status: 502 });
+      const code = /credit|billing/i.test(e.message) ? "AI_NO_CREDIT" : `AI_${e.status ?? "ERROR"}`;
+      return NextResponse.json({ error: `Something went wrong creating your plan. Please try again. (Code: ${code})` }, { status: 502 });
+    }
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error("ANTHROPIC_API_KEY is not set");
+      return NextResponse.json({ error: "The planner isn't available right now. (Code: AI_KEY_MISSING)" }, { status: 503 });
     }
     console.error(e);
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
