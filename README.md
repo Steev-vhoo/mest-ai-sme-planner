@@ -2,6 +2,8 @@
 
 This web app goes with the **MEST Africa "AI for SMEs" Workshop** (6 November 2026). SME owners fill in a 5-step form about their business, their pain points and their workshop takeaways. A Claude-powered planning agent then writes a **personalised 90-day AI adoption plan**. The app turns the plan into a branded **PDF** and **emails it to the owner**. The owner can also download it on the spot.
 
+![Landing page](docs/landing-screenshot.png)
+
 ![Form](docs/form-screenshot.png)
 
 `docs/sample-plan-mock-data.pdf` shows the PDF layout, filled with placeholder data.
@@ -66,7 +68,8 @@ npm run dev                  # http://localhost:3000
 ## Project layout
 
 ```
-app/page.tsx              Landing page and hero (styled like the workshop flyer)
+app/page.tsx              Landing page (light theme, images, scroll animations, CTA to /plan)
+app/plan/page.tsx         Form page
 components/PlanForm.tsx   5-step form, loading and result screens, PDF download
 app/api/plan/route.ts     Pipeline: validate → agent → PDF → email → lead webhook
 lib/schema.ts             Form options, form schema, AI output schema
