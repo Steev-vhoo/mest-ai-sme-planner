@@ -21,7 +21,7 @@ Form (5 steps)  →  POST /api/plan
                    │    and a ban on guaranteed results, fake reviews, scraped contact lists, pirated software, etc.
                    │    → one self-correction retry, then fail closed
                    ├─ PDF (@react-pdf/renderer, MEST branding)
-                   ├─ Email with the PDF attached (Resend), optional BCC to a MEST inbox
+                   ├─ Email with the PDF attached (Gmail/SMTP or Resend), optional BCC to a MEST inbox
                    └─ Optional lead webhook (Google Sheet / Airtable via Zapier, Make or Apps Script)
 ```
 
@@ -43,11 +43,14 @@ Each PDF contains: a summary, strengths and opportunities, quick wins for this w
    | Variable | Required | Notes |
    |---|---|---|
    | `ANTHROPIC_API_KEY` | ✅ | From console.anthropic.com |
-   | `RESEND_API_KEY` | ✅ for email | From resend.com |
-   | `EMAIL_FROM` | ✅ for email | e.g. `MEST Africa <ai-for-smes@meltwater.org>`. The domain must be verified in Resend. |
+   | `SMTP_USER` / `SMTP_PASS` | email, option A | A Gmail / Google Workspace address and its [app password](https://myaccount.google.com/apppasswords). No DNS changes needed. |
+   | `RESEND_API_KEY` | email, option B | From resend.com. The sending domain must be verified in Resend. |
+   | `EMAIL_FROM` | ✅ for email | e.g. `MEST Africa <ai-for-smes@meltwater.org>`. With Gmail it must be `SMTP_USER` or one of its aliases. |
    | `EMAIL_BCC` | optional | MEST inbox that gets a copy of every plan |
    | `LEADS_WEBHOOK_URL` | optional | Receives each submission as JSON. Use it to build the SME lead list. |
    | `RATE_LIMIT_PER_HOUR` | optional | Requests per IP per hour (default 5) |
+   | `GOOGLE_SERVICE_ACCOUNT_EMAIL` / `GOOGLE_PRIVATE_KEY` | for certificates | See "Certificates" below |
+   | `CERT_SHEET_ID` and/or `CERT_FOLDER_ID` | for certificates | Where to find each attendee's certificate |
 
 4. Click **Deploy**.
 
@@ -56,6 +59,20 @@ Notes:
 - Without `RESEND_API_KEY` the app still works: users see the "download PDF" option instead of email delivery.
 - The rate limiter keeps its counts in each serverless instance's memory, so it is approximate. For strict limits on a high-traffic launch, move it to Vercel KV or Upstash Redis (`lib/guardrails.ts`).
 - On 6 November many participants submit from the same venue Wi-Fi, so they share one IP. Before the event, raise `RATE_LIMIT_PER_HOUR` (for example to `200`). The per-email limit of 3 per hour still applies.
+
+## Certificates
+
+`/certificate` (the "Get certificate" button in the nav) lets attendees download their certificate by entering the email they registered with. Certificates stay in Google Drive and don't need to be shared publicly. The app reads them through a Google service account.
+
+1. In [Google Cloud Console](https://console.cloud.google.com), create a project, enable the **Google Drive API** and **Google Sheets API**, then create a **service account** and download its JSON key.
+2. Share the certificates folder (and sheet, if used) with the service account's email as **Viewer**.
+3. Set in Vercel: `GOOGLE_SERVICE_ACCOUNT_EMAIL` (`client_email` from the JSON) and `GOOGLE_PRIVATE_KEY` (`private_key` from the JSON).
+4. Tell the app how to find each certificate (one or both):
+   - **Sheet** (`CERT_SHEET_ID`, the ID in the sheet's URL): a header row with an **Email** column and a column with each certificate's Drive link, such as the "Merged Doc URL" column Autocrat writes. An optional **Name** column personalises the greeting.
+   - **Folder** (`CERT_FOLDER_ID`, the ID in the folder's URL): each certificate's file name contains the attendee's email, e.g. `kwame@example.com.pdf`.
+5. Redeploy and check `/api/health` shows `"certificates": true`.
+
+Google Docs and Slides certificates are converted to PDF automatically. Keep each certificate under about 4 MB (Vercel's response limit).
 
 ## Local development
 
@@ -70,6 +87,8 @@ npm run dev                  # http://localhost:3000
 ```
 app/page.tsx              Landing page (light theme, images, scroll animations, CTA to /plan)
 app/plan/page.tsx         Form page
+app/certificate/page.tsx  Certificate download page (animated headline)
+lib/certificates.ts       Google Drive / Sheets certificate lookup
 components/PlanForm.tsx   5-step form, loading and result screens, PDF download
 app/api/plan/route.ts     Pipeline: validate → agent → PDF → email → lead webhook
 lib/schema.ts             Form options, form schema, AI output schema

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { certificatesConfigured } from "@/lib/certificates";
+import { emailProvider } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -6,7 +8,8 @@ export const dynamic = "force-dynamic";
 export function GET() {
   return NextResponse.json({
     anthropicKey: Boolean(process.env.ANTHROPIC_API_KEY),
-    email: Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM),
+    email: emailProvider() ?? false,
+    certificates: certificatesConfigured(),
     leadsWebhook: Boolean(process.env.LEADS_WEBHOOK_URL),
     rateLimitPerHour: Number(process.env.RATE_LIMIT_PER_HOUR ?? 5),
   });

@@ -1,22 +1,59 @@
+import nodemailer from "nodemailer";
 import { Resend } from "resend";
 import type { FormInput, Plan } from "./schema";
+
+/**
+ * Two ways to send:
+ *  - SMTP (e.g. a Gmail / Google Workspace account with an app password): no DNS
+ *    changes needed. Used when SMTP_USER and SMTP_PASS are set.
+ *  - Resend: needs the sending domain verified in Resend. Used otherwise.
+ */
+type Mail = { to: string; subject: string; html: string; attachments: { filename: string; content: Buffer }[] };
+
+export function emailProvider(): "smtp" | "resend" | null {
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) return "smtp";
+  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) return "resend";
+  return null;
+}
+
+async function send(mail: Mail) {
+  const bcc = process.env.EMAIL_BCC || undefined;
+  if (emailProvider() === "smtp") {
+    const port = Number(process.env.SMTP_PORT ?? 465);
+    const transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port,
+      secure: port === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    await transport.sendMail({
+      from: process.env.EMAIL_FROM || `MEST Africa <${process.env.SMTP_USER}>`,
+      bcc,
+      ...mail,
+    });
+    return;
+  }
+  const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
+    from: process.env.EMAIL_FROM!,
+    bcc,
+    ...mail,
+  });
+  if (error) throw new Error(error.message);
+}
 
 const esc = (t: string) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 export function emailConfigured() {
-  return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+  return emailProvider() !== null;
 }
 
 export async function sendPlanEmail(form: FormInput, plan: Plan, pdf: Buffer) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
   const firstName = form.fullName.split(/\s+/)[0];
   const wins = plan.quickWinsThisWeek.map((w) => `<li style="margin-bottom:6px">${esc(w)}</li>`).join("");
   const filename = `${form.businessName.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "SME"}-90-Day-AI-Plan.pdf`;
 
-  const { error } = await resend.emails.send({
-    from: process.env.EMAIL_FROM!,
+  await send({
     to: form.email,
-    bcc: process.env.EMAIL_BCC || undefined,
     subject: `Your 90-Day AI Adoption Plan – ${form.businessName}`,
     html: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:auto;color:#111">
   <div style="background:#111;color:#fff;padding:24px;border-radius:6px">
@@ -33,5 +70,4 @@ export async function sendPlanEmail(form: FormInput, plan: Plan, pdf: Buffer) {
 </div>`,
     attachments: [{ filename, content: pdf }],
   });
-  if (error) throw new Error(`Email failed: ${error.message}`);
 }

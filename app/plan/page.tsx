@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function PlanPage() {
   return (
     <div className="form-page">
-      <SiteNav cta={false} />
+      <SiteNav page="plan" />
       <main className="shell">
         <header className="hero">
           <p className="eyebrow rise">MEST Africa · AI for SMEs Workshop</p>

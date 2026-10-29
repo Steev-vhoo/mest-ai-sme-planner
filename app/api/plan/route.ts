@@ -36,11 +36,11 @@ export async function POST(req: Request) {
         await sendPlanEmail(form, plan, pdf);
         emailed = true;
       } catch (e) {
-        console.error(e);
-        emailError = "We couldn't email your plan, but you can download it below.";
+        console.error("Email failed:", e);
+        emailError = `We couldn't email your plan, but you can download it below. (Code: EMAIL_FAILED – ${emailFailureReason(e)})`;
       }
     } else {
-      emailError = "Email delivery isn't configured yet — download your plan below.";
+      emailError = "Email delivery isn't configured yet — download your plan below. (Code: EMAIL_NOT_CONFIGURED)";
     }
 
     after(() => recordLead(form, plan, emailed));
@@ -77,6 +77,16 @@ export async function POST(req: Request) {
     console.error(e);
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
+}
+
+// Short, non-secret reason shown to admins so delivery problems can be fixed from the browser.
+function emailFailureReason(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (/domain is not verified|verify a domain|testing emails/i.test(msg)) return "sending domain not verified in Resend";
+  if (/invalid login|username and password not accepted|535|application-specific password/i.test(msg)) return "SMTP login rejected; use an app password";
+  if (/api key is invalid|invalid_api_key/i.test(msg)) return "Resend API key invalid";
+  if (/from.*(invalid|format)/i.test(msg)) return "EMAIL_FROM is not a valid sender";
+  return msg.replace(/\s+/g, " ").slice(0, 120);
 }
 
 // Optional lead capture (concept note objective: build a database of engaged SME leads).
