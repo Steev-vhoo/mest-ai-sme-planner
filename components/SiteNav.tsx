@@ -11,7 +11,7 @@ export default function SiteNav({ page }: { page?: "plan" | "certificate" }) {
         <div className="nav-links">
           {page !== "certificate" && (
             <Link href="/certificate" className="btn btn-ghost btn-small">
-              <span aria-hidden>🎓</span> Get certificate
+              Get certificate
             </Link>
           )}
           {page !== "plan" && (
