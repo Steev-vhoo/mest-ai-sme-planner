@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 // `page` hides the link to the page you're already on.
-export default function SiteNav({ page }: { page?: "plan" | "certificate" }) {
+export default function SiteNav({ page }: { page?: "plan" | "certificate" | "resources" }) {
   return (
     <nav className="nav">
       <div className="nav-inner">
@@ -9,14 +9,21 @@ export default function SiteNav({ page }: { page?: "plan" | "certificate" }) {
           <img src="/mest-logo.png" alt="MEST Africa" />
         </Link>
         <div className="nav-links">
+          {page !== "resources" && (
+            <Link href="/resources" className="nav-text">
+              Resources
+            </Link>
+          )}
           {page !== "certificate" && (
             <Link href="/certificate" className="btn btn-ghost btn-small">
-              Get certificate
+              <span className="long">Get certificate</span>
+              <span className="short">Certificate</span>
             </Link>
           )}
           {page !== "plan" && (
             <Link href="/plan" className="btn btn-primary btn-small">
-              Start my plan <span className="arrow">→</span>
+              <span className="long">Start my plan</span>
+              <span className="short">My plan</span> <span className="arrow">→</span>
             </Link>
           )}
         </div>

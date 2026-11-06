@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { certificatesConfigured } from "@/lib/certificates";
 import { emailProvider } from "@/lib/email";
+import { resourcesConfigured } from "@/lib/resources";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ export function GET() {
     anthropicKey: Boolean(process.env.ANTHROPIC_API_KEY),
     email: emailProvider() ?? false,
     certificates: certificatesConfigured(),
+    resources: resourcesConfigured(),
     leadsWebhook: Boolean(process.env.LEADS_WEBHOOK_URL),
     rateLimitPerHour: Number(process.env.RATE_LIMIT_PER_HOUR ?? 5),
   });

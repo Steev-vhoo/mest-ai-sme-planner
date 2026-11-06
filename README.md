@@ -51,6 +51,7 @@ Each PDF contains: a summary, strengths and opportunities, quick wins for this w
    | `RATE_LIMIT_PER_HOUR` | optional | Requests per IP per hour (default 5) |
    | `GOOGLE_SERVICE_ACCOUNT_JSON` | for certificates | The service account JSON file's contents. See "Certificates" below |
    | `CERT_SHEET_ID` and/or `CERT_FOLDER_ID` | for certificates | Where to find each attendee's certificate |
+   | `RESOURCES_FOLDER_ID` | for resources | Drive folder with the facilitators' resources. See "Workshop resources" below |
 
 4. Click **Deploy**.
 
@@ -74,6 +75,17 @@ Notes:
 
 Google Docs and Slides certificates are converted to PDF automatically. Keep each certificate under about 4 MB (Vercel's response limit).
 
+## Workshop resources
+
+`/resources` (the "Resources" link in the nav) lists the facilitators' files from one Google Drive folder. Participants open them in a viewer on the site (slides, PDFs, Docs, Sheets, videos, images) or download them.
+
+1. Create a Drive folder for resources. Files directly inside it appear under "General"; each subfolder becomes a section, e.g. `1. Module 1 – AI Fundamentals`. Number names to control the order; the numbers are hidden on the site. Google Drive shortcuts work too.
+2. Share the folder with the service account's email as **Viewer** (the same service account as certificates).
+3. Also set the folder's General access to **Anyone with the link – Viewer**. Google's embedded viewer only shows files that are link-shared. Everything inside the folder inherits this.
+4. Set `RESOURCES_FOLDER_ID` (the ID in the folder's URL) in Vercel and redeploy. `/api/health` shows `"resources": true`.
+
+New or changed files appear on the site within 5 minutes.
+
 ## Local development
 
 ```bash
@@ -88,7 +100,10 @@ npm run dev                  # http://localhost:3000
 app/page.tsx              Landing page (light theme, images, scroll animations, CTA to /plan)
 app/plan/page.tsx         Form page
 app/certificate/page.tsx  Certificate download page (animated headline)
+app/resources/page.tsx    Workshop resources library with in-site viewer
+lib/google.ts             Google service account access (shared)
 lib/certificates.ts       Google Drive / Sheets certificate lookup
+lib/resources.ts          Google Drive resources listing
 components/PlanForm.tsx   5-step form, loading and result screens, PDF download
 app/api/plan/route.ts     Pipeline: validate → agent → PDF → email → lead webhook
 lib/schema.ts             Form options, form schema, AI output schema
