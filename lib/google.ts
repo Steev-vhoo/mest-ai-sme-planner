@@ -12,29 +12,72 @@ const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets.readonly",
 ];
 
-// Accepts either the whole service-account JSON file pasted into
-// GOOGLE_SERVICE_ACCOUNT_JSON, or its two fields as separate variables.
-function credentials(): { email: string; key: string } | null {
-  const json = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
-  if (json) {
-    try {
-      const parsed = JSON.parse(json);
-      if (parsed.client_email && parsed.private_key) {
-        return { email: parsed.client_email, key: parsed.private_key };
-      }
-    } catch {
-      console.error("GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON");
-    }
-    return null;
+type Creds = { email: string; key: string };
+type CredsResult = { creds: Creds } | { problem: string };
+
+const unquote = (v: string) => v.trim().replace(/^(['"`])([\s\S]*)\1$/, "$2").trim();
+
+// The service-account key file, pasted as text. Also accepts it base64-encoded.
+function parseKeyFile(raw: string, varName: string): CredsResult {
+  let text = unquote(raw);
+  if (!text.startsWith("{")) {
+    const decoded = Buffer.from(text, "base64").toString("utf8").trim();
+    if (decoded.startsWith("{")) text = decoded;
   }
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    // Pasting sometimes turns the key's "\n" escapes into real line breaks, which
+    // breaks the JSON; the two fields we need can still be read directly.
+    const email = text.match(/"client_email"\s*:\s*"([^"]+)"/)?.[1];
+    const key = text.match(/"private_key"\s*:\s*"(-----BEGIN[\s\S]*?-----END PRIVATE KEY-----[^"]*)"/)?.[1];
+    if (email && key) return { creds: { email, key: key.replace(/\\n/g, "\n") } };
+    return { problem: `${varName} is not valid JSON: paste the whole key file again, from the first { to the last }` };
+  }
+  if (parsed.installed || parsed.web) {
+    return { problem: `${varName} holds an OAuth client file, not a service account key: create a key under IAM → Service Accounts → Keys` };
+  }
+  if (typeof parsed.client_email !== "string" || typeof parsed.private_key !== "string") {
+    return { problem: `${varName} has no client_email/private_key: use the service account's JSON key file` };
+  }
+  return { creds: { email: parsed.client_email, key: parsed.private_key.replace(/\\n/g, "\n") } };
+}
+
+// Accepts the whole key file in GOOGLE_SERVICE_ACCOUNT_JSON (recommended), or its
+// two fields as GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_PRIVATE_KEY.
+function resolveCredentials(): CredsResult {
+  const json = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (json?.trim()) return parseKeyFile(json, "GOOGLE_SERVICE_ACCOUNT_JSON");
+
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
   const key = process.env.GOOGLE_PRIVATE_KEY;
+  // The whole key file pasted into GOOGLE_PRIVATE_KEY by mistake.
+  if (key && unquote(key).startsWith("{")) return parseKeyFile(key, "GOOGLE_PRIVATE_KEY");
+  if (!email && !key) return { problem: "GOOGLE_SERVICE_ACCOUNT_JSON is not set (or not redeployed since it was added)" };
+  if (!email) return { problem: "GOOGLE_SERVICE_ACCOUNT_EMAIL is not set" };
+  if (!key) return { problem: "GOOGLE_PRIVATE_KEY is not set" };
   // Vercel may store the key on one line with literal "\n" sequences, or wrapped in quotes.
-  return email && key ? { email, key: key.replace(/^"|"$/g, "").replace(/\\n/g, "\n") } : null;
+  const pem = unquote(key).replace(/\\n/g, "\n");
+  if (!pem.includes("PRIVATE KEY-----")) {
+    return { problem: "GOOGLE_PRIVATE_KEY must include the -----BEGIN PRIVATE KEY----- and -----END PRIVATE KEY----- lines" };
+  }
+  return { creds: { email: unquote(email), key: pem } };
+}
+
+function credentials(): Creds | null {
+  const r = resolveCredentials();
+  return "creds" in r ? r.creds : null;
 }
 
 export function googleConfigured() {
   return credentials() !== null;
+}
+
+// For /api/health: true, or a short description of what's wrong (never the values).
+export function googleCredentialsStatus(): true | string {
+  const r = resolveCredentials();
+  return "creds" in r ? true : r.problem;
 }
 
 let client: JWT | null = null;
