@@ -22,22 +22,34 @@ const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets.readonly",
 ];
 
+// Accepts either the whole service-account JSON file pasted into
+// GOOGLE_SERVICE_ACCOUNT_JSON, or its two fields as separate variables.
+function credentials(): { email: string; key: string } | null {
+  const json = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
+  if (json) {
+    try {
+      const parsed = JSON.parse(json);
+      if (parsed.client_email && parsed.private_key) {
+        return { email: parsed.client_email, key: parsed.private_key };
+      }
+    } catch {
+      console.error("GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON");
+    }
+    return null;
+  }
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const key = process.env.GOOGLE_PRIVATE_KEY;
+  // Vercel may store the key on one line with literal "\n" sequences, or wrapped in quotes.
+  return email && key ? { email, key: key.replace(/^"|"$/g, "").replace(/\\n/g, "\n") } : null;
+}
+
 export function certificatesConfigured() {
-  return Boolean(
-    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
-      process.env.GOOGLE_PRIVATE_KEY &&
-      (process.env.CERT_SHEET_ID || process.env.CERT_FOLDER_ID),
-  );
+  return Boolean(credentials() && (process.env.CERT_SHEET_ID || process.env.CERT_FOLDER_ID));
 }
 
 let client: JWT | null = null;
 function auth() {
-  client ??= new JWT({
-    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    // Vercel stores the key on one line with literal "\n" sequences.
-    key: process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
-    scopes: SCOPES,
-  });
+  client ??= new JWT({ ...credentials()!, scopes: SCOPES });
   return client;
 }
 

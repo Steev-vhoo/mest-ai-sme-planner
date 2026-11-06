@@ -49,7 +49,7 @@ Each PDF contains: a summary, strengths and opportunities, quick wins for this w
    | `EMAIL_BCC` | optional | MEST inbox that gets a copy of every plan |
    | `LEADS_WEBHOOK_URL` | optional | Receives each submission as JSON. Use it to build the SME lead list. |
    | `RATE_LIMIT_PER_HOUR` | optional | Requests per IP per hour (default 5) |
-   | `GOOGLE_SERVICE_ACCOUNT_EMAIL` / `GOOGLE_PRIVATE_KEY` | for certificates | See "Certificates" below |
+   | `GOOGLE_SERVICE_ACCOUNT_JSON` | for certificates | The service account JSON file's contents. See "Certificates" below |
    | `CERT_SHEET_ID` and/or `CERT_FOLDER_ID` | for certificates | Where to find each attendee's certificate |
 
 4. Click **Deploy**.
@@ -66,7 +66,7 @@ Notes:
 
 1. In [Google Cloud Console](https://console.cloud.google.com), create a project, enable the **Google Drive API** and **Google Sheets API**, then create a **service account** and download its JSON key.
 2. Share the certificates folder (and sheet, if used) with the service account's email as **Viewer**.
-3. Set in Vercel: `GOOGLE_SERVICE_ACCOUNT_EMAIL` (`client_email` from the JSON) and `GOOGLE_PRIVATE_KEY` (`private_key` from the JSON).
+3. In Vercel, add `GOOGLE_SERVICE_ACCOUNT_JSON`: open the JSON key file in a text editor, copy everything, and paste it as the value. (Alternatively, set `GOOGLE_SERVICE_ACCOUNT_EMAIL` and `GOOGLE_PRIVATE_KEY` from its `client_email` and `private_key` fields.)
 4. Tell the app how to find each certificate (one or both):
    - **Sheet** (`CERT_SHEET_ID`, the ID in the sheet's URL): a header row with an **Email** column and a column with each certificate's Drive link, such as the "Merged Doc URL" column Autocrat writes. An optional **Name** column personalises the greeting.
    - **Folder** (`CERT_FOLDER_ID`, the ID in the folder's URL): each certificate's file name contains the attendee's email, e.g. `kwame@example.com.pdf`.
