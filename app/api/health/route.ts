@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { certificatesConfigured } from "@/lib/certificates";
 import { emailProvider } from "@/lib/email";
+import { googleConfigured } from "@/lib/google";
 import { resourcesConfigured } from "@/lib/resources";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +11,10 @@ export function GET() {
   return NextResponse.json({
     anthropicKey: Boolean(process.env.ANTHROPIC_API_KEY),
     email: emailProvider() ?? false,
+    googleServiceAccount: googleConfigured(),
     certificates: certificatesConfigured(),
     resources: resourcesConfigured(),
+    resourcesFolderId: Boolean(process.env.RESOURCES_FOLDER_ID),
     leadsWebhook: Boolean(process.env.LEADS_WEBHOOK_URL),
     rateLimitPerHour: Number(process.env.RATE_LIMIT_PER_HOUR ?? 5),
   });

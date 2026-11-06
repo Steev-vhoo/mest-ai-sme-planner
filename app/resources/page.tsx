@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import ResourceLibrary from "@/components/ResourceLibrary";
 import SiteNav from "@/components/SiteNav";
+import { googleConfigured } from "@/lib/google";
 import { listResources, resourcesConfigured, type ResourceSection } from "@/lib/resources";
 
 export const metadata: Metadata = {
@@ -15,7 +16,8 @@ export default async function ResourcesPage() {
   let sections: ResourceSection[] = [];
   let problem: string | null = null;
   if (!resourcesConfigured()) {
-    problem = "Workshop resources will appear here soon. Please check back later. (Code: RESOURCES_NOT_CONFIGURED)";
+    const code = !googleConfigured() ? "GOOGLE_NOT_CONFIGURED" : "RESOURCES_FOLDER_MISSING";
+    problem = `Workshop resources will appear here soon. Please check back later. (Code: ${code})`;
   } else {
     try {
       sections = await listResources();
