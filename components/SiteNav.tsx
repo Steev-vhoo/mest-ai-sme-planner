@@ -9,11 +9,6 @@ export default function SiteNav({ page }: { page?: "plan" | "certificate" | "res
           <img src="/mest-logo.png" alt="MEST Africa" />
         </Link>
         <div className="nav-links">
-          {page !== "resources" && (
-            <Link href="/resources" className="nav-text">
-              Resources
-            </Link>
-          )}
           {page !== "certificate" && (
             <Link href="/certificate" className="btn btn-ghost btn-small">
               <span className="long">Get certificate</span>

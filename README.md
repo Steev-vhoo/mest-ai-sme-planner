@@ -77,7 +77,7 @@ Google Docs and Slides certificates are converted to PDF automatically. Keep eac
 
 ## Workshop resources
 
-`/resources` (the "Resources" link in the nav) lists the facilitators' files from one Google Drive folder. Participants open them in a viewer on the site (slides, PDFs, Docs, Sheets, videos, images) or download them.
+`/resources` (the "Workshop resources" button on the home page) lists the facilitators' files from one Google Drive folder. Participants open them in a viewer on the site (slides, PDFs, Docs, Sheets, videos, images) or download them.
 
 1. Create a Drive folder for resources. Files directly inside it appear under "General"; each subfolder becomes a section, e.g. `1. Module 1 – AI Fundamentals`. Number names to control the order; the numbers are hidden on the site. Google Drive shortcuts work too.
 2. Share the folder with the service account's email as **Viewer** (the same service account as certificates).

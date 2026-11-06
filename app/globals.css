@@ -226,16 +226,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ---------- Nav links ---------- */
 .nav-links { display: flex; gap: 8px; align-items: center; }
-.nav-text { color: var(--text); font-weight: 600; font-size: 14px; text-decoration: none; padding: 9px 10px; border-radius: 999px; }
-.nav-text:hover { background: var(--teal-soft); }
-.nav-links .btn, .nav-text { white-space: nowrap; }
+.nav-links .btn { white-space: nowrap; }
 .nav-links .short { display: none; }
 @media (max-width: 480px) {
   .nav-inner { gap: 8px; }
   .nav img { height: 34px; }
   .nav-links { gap: 4px; }
   .nav-links .btn-small { padding: 8px 12px; font-size: 13px; gap: 6px; }
-  .nav-text { padding: 8px 6px; font-size: 13px; }
   .nav-links .long, .nav-links .arrow { display: none; }
   .nav-links .short { display: inline; }
 }

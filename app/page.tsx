@@ -64,7 +64,7 @@ export default function Home() {
                 <Link href="/plan" className="btn btn-primary">
                   Build my 90-day plan <span className="arrow">→</span>
                 </Link>
-                <a href="#how" className="btn btn-ghost">How it works</a>
+                <Link href="/resources" className="btn btn-ghost">Workshop resources</Link>
               </div>
               <div className="hero-facts rise" style={{ "--d": "320ms" } as React.CSSProperties}>
                 <span><ClockIcon size={16} /> About 8 minutes</span>
